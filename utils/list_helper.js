@@ -4,24 +4,25 @@ const dummy = (blogs) => {
 }
 
 const totalLikes = (blogs) => {
-  const likes = blogs.map(blog => blog.likes)
-
-  const reducer = (sum, item) => {
-    return sum + item
-  }
-
-  return likes.reduce(reducer, 0)
+  return blogs.map(blog => blog.likes).reduce((sum, item) => sum + item, 0)
 }
 
 const favoriteBlog = (blogs) => {
-  const favorite = blogs.reduce((bigger, item) => {
-    console.log('Vertailu: ', bigger, item)
-    return (bigger.likes > item.likes) ? bigger : item
+  return blogs.reduce((bigger, item) => (bigger.likes > item.likes) ? bigger : item)
+}
+
+const mostBlogs = (blogs) => {
+  const authors = [...new Set( blogs.map(blog => blog.author ) )]
+  const blogsByAuthor =  authors.map(a => {
+    return {
+      author: a,
+      blogs: blogs.filter(blog => blog.author === a).length
+    }
   })
 
-  return favorite
+  return blogsByAuthor.reduce((most, item) => (most.blogs > item.blogs) ? most : item)
 }
 
 module.exports = {
-  dummy, totalLikes, favoriteBlog
+  dummy, totalLikes, favoriteBlog, mostBlogs
 }
