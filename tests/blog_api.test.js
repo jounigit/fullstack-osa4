@@ -50,7 +50,7 @@ test('a specific blog is within the returned blogs', async () => {
 })
 
 // Test adding
-test('a valid note can be added ', async () => {
+test('a valid blog can be added ', async () => {
   const newBlog = {
     title: 'TDD harms architecture',
     author: 'Robert C. Martin',
@@ -71,6 +71,27 @@ test('a valid note can be added ', async () => {
 
   expect(response.body.length).toBe(initialBlogs.length + 1)
   expect(contents).toContain('TDD harms architecture')
+})
+
+test('blog without title is not added ', async () => {
+  const newBlog = {
+    author: 'Robert C. Martin',
+    url: 'http://blog.architecture.html',
+    likes: 0
+  }
+
+  const initialBlogs = await api
+    .get('/api/blogs')
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(400)
+
+  const response = await api
+    .get('/api/blogs')
+
+  expect(response.body.length).toBe(initialBlogs.body.length)
 })
 
 afterAll(() => {
