@@ -1,6 +1,6 @@
 const mostLikes = require('../utils/list_helper').mostLikes
 
-describe('most blogs', () => {
+describe.skip('most blogs', () => {
   const blogs = [
     {
       _id: '5a422a851b54a676234d17f7',

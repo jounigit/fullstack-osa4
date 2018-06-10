@@ -31,5 +31,8 @@ module.exports = {
           "error", { "before": true, "after": true }
       ],
       "no-console": 0
+  },
+  "parserOptions": {
+    "ecmaVersion": 2017
   }
 };
