@@ -49,6 +49,30 @@ test('a specific blog is within the returned blogs', async () => {
   expect(contents).toContain('Canonical string reduction')
 })
 
+// Test adding
+test('a valid note can be added ', async () => {
+  const newBlog = {
+    title: 'TDD harms architecture',
+    author: 'Robert C. Martin',
+    url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html',
+    likes: 0
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+
+  const response = await api
+    .get('/api/blogs')
+
+  const contents = response.body.map(r => r.title)
+
+  expect(response.body.length).toBe(initialBlogs.length + 1)
+  expect(contents).toContain('TDD harms architecture')
+})
+
 afterAll(() => {
   server.close()
 })
