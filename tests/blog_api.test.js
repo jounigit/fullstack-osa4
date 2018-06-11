@@ -2,140 +2,127 @@ const supertest = require('supertest')
 const { app, server } = require('../index')
 const api = supertest(app)
 const Blog = require('../models/blog')
+const helper = require('./test_helper')
 
-const initialBlogs = [
-  {
-    title: 'React patterns',
-    author: 'Michael Chan',
-    url: 'https://reactpatterns.com/',
-    likes: 7
-  },
-  {
-    title: 'Canonical string reduction',
-    author: 'Edsger W. Dijkstra',
-    url: 'http://www.cs.utexas.edu/~EWD/transcriptions/EWD08xx/EWD808.html',
-    likes: 12
-  }
-]
+describe('when there is initially some blogs saved', async () => {
+  beforeAll(async () => {
+    await Blog.remove({})
 
-beforeAll(async () => {
-  await Blog.remove({})
+    const blogObjects = helper.initialBlogs.map(blog => new Blog(blog))
+    await Promise.all(blogObjects.map(blog => blog.save()))
+  })
 
-  const blogObjects = initialBlogs.map(blog => new Blog(blog))
-  const promiseArray = blogObjects.map(blog => blog.save())
-  await Promise.all(promiseArray)
-})
+  test('blogs are returned as json by GET /api/blogs', async () => {
+    const blogsInDatabase = await helper.blogsInDb()
 
-test('blogs are returned as json', async () => {
-  await api
-    .get('/api/blogs')
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
-})
+    const response = await api
+      .get('/api/blogs')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
 
-// test all blogs
-test('all blogs are returned', async () => {
-  const response = await api
-    .get('/api/blogs')
+    expect(response.body.length).toBe(blogsInDatabase.length)
 
-  expect(response.body.length).toBe(initialBlogs.length)
-})
+    const returnedContents = response.body.map(n => n.title)
+    blogsInDatabase.forEach(blog => {
+      expect(returnedContents).toContain(blog.title)
+    })
+  })
 
-// test a specific blog
-test('a specific blog is within the returned blogs', async () => {
-  const response = await api
-    .get('/api/blogs')
+  // test a specific blog
+  test('individual blogs are returned as json by GET /api/blogs/:id', async () => {
+    const blogsInDatabase = await helper.blogsInDb()
+    const aBlog = blogsInDatabase[0]
 
-  const contents = response.body.map(r => r.title)
+    const response = await api
+      .get(`/api/blogs/${aBlog.id}`)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
 
-  expect(contents).toContain('Canonical string reduction')
-})
+    expect(response.body.title).toEqual(aBlog.title)
+  })
 
-// test a specific blog
-test('a specific blog can be viewed', async () => {
-  const resultAll = await api
-    .get('/api/blogs')
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
+  test('404 returned by GET /api/blogs/:id with nonexisting valid id', async () => {
+    const validNonexistingId = await helper.nonExistingId()
 
-  const aBlogFromAll = resultAll.body[0]
-  const blogId = aBlogFromAll._id
+    await api
+      .get(`/api/blogs/${validNonexistingId}`)
+      .expect(404)
+  })
 
-  const resultBlog = await api
-    .get(`/api/blogs/${blogId}`)
+  /*
+  test('400 is returned by GET /api/notes/:id with invalid id', async () => {
+    const invalidId = 'id=5b18de12a45'
 
-  console.log('ID:::: ', aBlogFromAll._id)
+    const response = await api
+      .get(`/api/notes/${invalidId}`)
+      .expect(400)
+  }) */
 
-  const blogObject = resultBlog.body
+  describe('addition of a new blog', async () => {
+  // Test adding
+    test('a valid blog can be added', async () => {
+      const blogsBefore = await helper.blogsInDb()
 
-  expect(blogObject).toEqual(aBlogFromAll)
-})
+      const newBlog = {
+        title: 'TDD harms architecture',
+        author: 'Robert C. Martin',
+        url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html',
+        likes: 0
+      }
 
-// Test adding
-test('a valid blog can be added ', async () => {
-  const newBlog = {
-    title: 'TDD harms architecture',
-    author: 'Robert C. Martin',
-    url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html',
-    likes: 0
-  }
+      await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
 
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
+      const blogsAfter = await helper.blogsInDb()
 
-  const response = await api
-    .get('/api/blogs')
+      expect(blogsAfter.length).toBe(blogsBefore.length + 1)
+      expect(blogsAfter).toContainEqual(newBlog)
+    })
 
-  const contents = response.body.map(r => r.title)
 
-  expect(response.body.length).toBe(initialBlogs.length + 1)
-  expect(contents).toContain('TDD harms architecture')
-})
+    // Test adding without title and url
+    test('fails if title and url is missing', async () => {
+      const newBlog = {
+        author: 'Robert C. Martin',
+        likes: 0
+      }
 
-// Test adding without title and url
-test('blog without title and url is not added ', async () => {
-  const newBlog = {
-    author: 'Robert C. Martin',
-    likes: 0
-  }
+      const blogsBefore = await helper.blogsInDb()
 
-  const initialBlogs = await api
-    .get('/api/blogs')
+      await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(400)
 
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(400)
+      const blogsAfter = await helper.blogsInDb()
 
-  const response = await api
-    .get('/api/blogs')
+      expect(blogsAfter.length).toBe(blogsBefore.length)
+    })
 
-  expect(response.body.length).toBe(initialBlogs.body.length)
-})
+    // test with no likes
+    test('default value is added if likes is missing', async () => {
+      const newBlog = {
+        title: 'Blog without no likes',
+        author: 'Robert C. Martin',
+        url: 'http://blog.html'
+      }
 
-// test with no likes
-test('added blog without no likes should be 0', async () => {
-  const newBlog = {
-    title: 'Blog without no likes',
-    author: 'Robert C. Martin',
-    url: 'http://blog.html'
-  }
+      const response = await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
 
-  const response = await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(200)
-    .expect('Content-Type', /application\/json/)
+      expect(response.body.likes).toBe(0)
+    }) /**/
+  })
 
-  //const likes = response.json(response.likes)
-  console.log('LIKES::::: ', response.body.likes)
+  /**/
 
-  expect(response.body.likes).toBe(0)
-})
-
-afterAll(() => {
-  server.close()
+  afterAll(() => {
+    server.close()
+  })
 })
