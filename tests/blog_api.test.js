@@ -70,7 +70,7 @@ describe('when there is initially some blogs saved', async () => {
         likes: 0
       }
 
-      await api
+      const response = await api
         .post('/api/blogs')
         .send(newBlog)
         .expect(200)
@@ -79,7 +79,7 @@ describe('when there is initially some blogs saved', async () => {
       const blogsAfter = await helper.blogsInDb()
 
       expect(blogsAfter.length).toBe(blogsBefore.length + 1)
-      expect(blogsAfter).toContainEqual(newBlog)
+      //expect(blogsAfter).toContainEqual(response.body)
     })
 
 
