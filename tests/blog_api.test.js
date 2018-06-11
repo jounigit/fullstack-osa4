@@ -149,6 +149,36 @@ describe('when there is initially some blogs saved', async () => {
     })
   })
 
+  describe('updating blog', async () => {
+    const newLikes = {
+      likes: 100
+    }
+
+    test('UPDATE succeeds with proper statuscode', async () => {
+      const blogsBefore = await helper.blogsInDb()
+      const aBlog = blogsBefore[0]
+
+      await api
+        .put(`/api/blogs/${aBlog.id}`)
+        .send(newLikes)
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+
+      const blogsAfter = await helper.blogsInDb()
+      expect(blogsAfter[0].likes).toBe(newLikes.likes)
+    })
+
+    test('UPDATE fails 404 returned, nonexisting valid id', async () => {
+      const validNonexistingId = await helper.nonExistingId()
+
+      await api
+        .get(`/api/blogs/${validNonexistingId}`)
+        .send(newLikes)
+        .expect(404)
+    })
+
+  })
+
   /**/
 
   afterAll(() => {
