@@ -80,6 +80,8 @@ describe('when there is initially some blogs saved', async () => {
       console.log(response.body)
       expect(blogsAfter.length).toBe(blogsBefore.length + 1)
       //expect(blogsAfter).toContainEqual(response.body)
+      const contents = blogsAfter.map(r => r.title)
+      expect(contents).toContain('TDD harms architecture')
     })
 
 
@@ -118,6 +120,33 @@ describe('when there is initially some blogs saved', async () => {
 
       expect(response.body.likes).toBe(0)
     }) /**/
+  })
+
+  describe('deletion of a note', async () => {
+    let addedBlog
+
+    beforeAll(async () => {
+      addedBlog = new Blog({
+        title: 'Blog to be deleted',
+        author: 'Robert C. Martin',
+        url: 'http://blogdelete.html'
+      })
+      await addedBlog.save()
+    })
+
+    test('DELETE succeeds with proper statuscode', async () => {
+      const blogsBefore = await helper.blogsInDb()
+
+      await api
+        .delete(`/api/blogs/${addedBlog._id}`)
+        .expect(204)
+
+      const blogsAfter = await helper.blogsInDb()
+
+      const contents = blogsAfter.map(r => r.title)
+      expect(contents).not.toContain(addedBlog.title)
+      expect(blogsAfter.length).toBe(blogsBefore.length - 1)
+    })
   })
 
   /**/
