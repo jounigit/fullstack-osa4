@@ -77,7 +77,7 @@ describe('when there is initially some blogs saved', async () => {
         .expect('Content-Type', /application\/json/)
 
       const blogsAfter = await helper.blogsInDb()
-
+      console.log(response.body)
       expect(blogsAfter.length).toBe(blogsBefore.length + 1)
       //expect(blogsAfter).toContainEqual(response.body)
     })
