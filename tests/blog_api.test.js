@@ -33,7 +33,7 @@ test('blogs are returned as json', async () => {
     .expect('Content-Type', /application\/json/)
 })
 
-// Test all blogs are returned
+// test all blogs
 test('all blogs are returned', async () => {
   const response = await api
     .get('/api/blogs')
@@ -41,6 +41,7 @@ test('all blogs are returned', async () => {
   expect(response.body.length).toBe(initialBlogs.length)
 })
 
+// test a specific blog
 test('a specific blog is within the returned blogs', async () => {
   const response = await api
     .get('/api/blogs')
@@ -48,6 +49,23 @@ test('a specific blog is within the returned blogs', async () => {
   const contents = response.body.map(r => r.title)
 
   expect(contents).toContain('Canonical string reduction')
+})
+
+// test a specific blog
+test('a specific blog can be viewed', async () => {
+  const resultAll = await api
+    .get('/api/blogs')
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+
+  const aBlogFromAll = resultAll.body[0]
+
+  const resultBlog = await api
+    .get(`/api/blogs/${aBlogFromAll.id}`)
+
+  const blogObject = resultBlog.body
+
+  expect(blogObject).toEqual(aBlogFromAll)
 })
 
 // Test adding
@@ -74,10 +92,11 @@ test('a valid blog can be added ', async () => {
   expect(contents).toContain('TDD harms architecture')
 })
 
-// test without title and url
-test('blog without title and url is not added ', async () => {
+// Test adding without title
+test('blog without title is not added ', async () => {
   const newBlog = {
     author: 'Robert C. Martin',
+    url: 'http://blog.architecture.html',
     likes: 0
   }
 
