@@ -59,9 +59,12 @@ test('a specific blog can be viewed', async () => {
     .expect('Content-Type', /application\/json/)
 
   const aBlogFromAll = resultAll.body[0]
+  const blogId = aBlogFromAll._id
 
   const resultBlog = await api
-    .get(`/api/blogs/${aBlogFromAll.id}`)
+    .get(`/api/blogs/${blogId}`)
+
+  console.log('ID:::: ', aBlogFromAll._id)
 
   const blogObject = resultBlog.body
 
@@ -92,11 +95,10 @@ test('a valid blog can be added ', async () => {
   expect(contents).toContain('TDD harms architecture')
 })
 
-// Test adding without title
-test('blog without title is not added ', async () => {
+// Test adding without title and url
+test('blog without title and url is not added ', async () => {
   const newBlog = {
     author: 'Robert C. Martin',
-    url: 'http://blog.architecture.html',
     likes: 0
   }
 
