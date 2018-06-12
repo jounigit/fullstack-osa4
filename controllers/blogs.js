@@ -1,22 +1,12 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
-const formatBlog = (blog) => {
-  return {
-    title: blog.title,
-    author: blog.author,
-    url: blog.url,
-    likes: blog.likes,
-    id: blog._id
-  }
-}
-
-blogsRouter.get('/', (request, response) => {
-  Blog
+blogsRouter.get('/', async (request, response) => {
+  const blogs = await Blog
     .find({})
-    .then(blogs => {
-      response.json(blogs.map(formatBlog))
-    })
+    .populate('user', { username: 1, name: 1 } )
+  response.json(blogs.map(Blog.format))
 })
 
 blogsRouter.get('/:id', async (request, response) => {
@@ -24,7 +14,7 @@ blogsRouter.get('/:id', async (request, response) => {
     const blog = await Blog.findById(request.params.id)
 
     if (blog) {
-      return response.json(formatBlog(blog))
+      return response.json(Blog.format(blog))
     } else {
       response.status(404).end()
     }
@@ -43,15 +33,22 @@ blogsRouter.post('/', async (request, response) => {
       return response.status(400).json({ error: 'title and url missing' })
     }
 
+    const user = await User.findOne()
+
     const blog = new Blog({
       title: body.title,
       author: body.author,
       url: body.url,
-      likes: body.likes === undefined ? 0 : body.likes
+      likes: body.likes === undefined ? 0 : body.likes,
+      user: user._id
     })
 
     const savedBlog = await blog.save()
-    return response.json(formatBlog(savedBlog))
+
+    user.blogs = user.blogs.concat(savedBlog._id)
+    await user.save()
+
+    return response.json(Blog.format(savedBlog))
   } catch (exception) {
     console.log(exception)
     response.status(500).json({ error: 'something went wrong...' })
@@ -66,7 +63,7 @@ blogsRouter.put('/:id', async (request, response) => {
       .findByIdAndUpdate(request.params.id, { likes: body.likes })
 
     if (blog) {
-      return response.json(formatBlog(blog))
+      return response.json(Blog.format(blog))
     } else {
       response.status(404).end()
     }
