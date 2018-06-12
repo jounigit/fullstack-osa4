@@ -2,8 +2,41 @@ const supertest = require('supertest')
 const { app, server } = require('../index')
 const api = supertest(app)
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const helper = require('./test_helper')
 
+// User tests
+describe.only('when there is initially one user at db', async () => {
+  beforeAll(async () => {
+    await User.remove({})
+    const user = new User({ username: 'root', password: 'sekret' })
+    await user.save()
+  })
+
+  test('POST /api/users succeeds with a fresh username', async () => {
+    const usersBefore = await helper.usersInDb()
+
+    const newUser = {
+      username: 'mluukkai',
+      name: 'Matti Luukkainen',
+      password: 'salainen',
+      adult: true
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const usersAfter = await helper.usersInDb()
+    expect(usersAfter.length).toBe(usersBefore.length+1)
+    const usernames = usersAfter.map(u => u.username)
+    expect(usernames).toContain(newUser.username)
+  })
+})
+
+// Blog tests
 describe('when there is initially some blogs saved', async () => {
   beforeAll(async () => {
     await Blog.remove({})
