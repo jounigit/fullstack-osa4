@@ -155,7 +155,11 @@ describe('when there is initially some blogs saved', async () => {
       const blogsAfter = await helper.blogsInDb()
       console.log(response.body)
       expect(blogsAfter.length).toBe(blogsBefore.length + 1)
-      //expect(blogsAfter).toContainEqual(response.body)
+      /* Tämä testi näyttää konsolissa ja
+      virheilmoituksessa, että pitäisi mennä läpi
+
+      expect(blogsAfter).toContainEqual(response.body)
+      */
       const contents = blogsAfter.map(r => r.title)
       expect(contents).toContain('TDD harms architecture')
     })
