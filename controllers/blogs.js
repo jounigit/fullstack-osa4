@@ -34,7 +34,6 @@ blogsRouter.post('/', async (request, response) => {
   const body = request.body
 
   try {
-    //const token = getTokenFrom(request)
     const decodedToken = jwt.verify(request.token, process.env.SECRET)
 
     if (!request.token || !decodedToken.id) {
@@ -91,12 +90,27 @@ blogsRouter.put('/:id', async (request, response) => {
 
 blogsRouter.delete('/:id', async (request, response) => {
   try {
-    await Blog.findByIdAndRemove(request.params.id)
+    const decodedToken = jwt.verify(request.token, process.env.SECRET)
 
-    response.status(204).end()
+    if (!request.token || !decodedToken.id) {
+      return response.status(401).json({ error: 'token missing or invalid' })
+    }
+
+    const blog = await Blog.findById(request.params.id)
+
+    if ( blog.user.toString() === decodedToken.id.toString() ) {
+      blog.remove()
+      response.status(204).end()
+    } else {
+      return response.status(403).json({ error: 'you don`t have a permission' })
+    }
   } catch (exception) {
-    console.log(exception)
-    response.status(400).send({ error: 'malformatted id' })
+    if (exception.name === 'JsonWebTokenError' ) {
+      response.status(401).json({ error: exception.message })
+    } else {
+      console.log(exception)
+      response.status(500).json({ error: 'something went wrong...' })
+    }
   }
 })
 

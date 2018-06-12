@@ -12,10 +12,10 @@ blogSchema.statics.format = (blog) => {
   return {
     id: blog._id,
     user: blog.user,
+    likes: blog.likes,
     title: blog.title,
     author: blog.author,
-    url: blog.url,
-    likes: blog.number
+    url: blog.url
   }
 }
 
